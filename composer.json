@@ -7,13 +7,13 @@
     "require": {
         "php": "^8.1",
         "giggsey/libphonenumber-for-php": "^8.13",
-        "guzzlehttp/guzzle": "^7.2",
+        "guzzlehttp/guzzle": "^7.8",
         "intervention/image": "^3.7",
         "laravel/framework": "^10.10",
         "laravel/sanctum": "^3.3",
         "laravel/tinker": "^2.8",
-        "messagebird/php-rest-api": "^3.1"
-  
+        "messagebird/php-rest-api": "^3.1",
+        "moyasar/moyasar-php": "^1.1"
     },
     "require-dev": {
         "fakerphp/faker": "^1.9.1",

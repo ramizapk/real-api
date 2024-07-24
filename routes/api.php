@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AdController;
 use App\Http\Controllers\Admin\AdminAuthController;
+use App\Http\Controllers\AdminAuthController as TestCon;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\CityController;
 use App\Http\Controllers\Admin\CityDetailController;
@@ -11,6 +12,7 @@ use App\Http\Controllers\Admin\PropertyTypeDetailController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Admin\PropertyController;
+use App\Http\Controllers\BookingController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\PropertyController as UserPropertyController;
 use App\Http\Controllers\CityController as UserCityController;
@@ -32,7 +34,9 @@ use Illuminate\Support\Facades\Route;
 |----------------------------------------
 */
 Route::prefix('v1')->group(function () {
-
+    Route::post('/bookings', [BookingController::class, 'book']);
+    Route::get('/payment/callback', [BookingController::class, 'callback']);
+    Route::post('/payment/webhook', [BookingController::class, 'handleWebhook']);
     /*
 |----------------------------------------
 | User API Routes
@@ -51,6 +55,7 @@ Route::prefix('v1')->group(function () {
     Route::post('verify', [AuthController::class, 'verify']);
 
     Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/bookings', [BookingController::class, 'book']);
         Route::post('/profile/update', [ProfileController::class, 'update']);
         Route::prefix('favorites')->group(function () {
             Route::get('/my', [FavoriteController::class, 'index']);
@@ -153,10 +158,11 @@ Route::prefix('v1')->group(function () {
 
 
 
-
+    Route::get('/test-moyasar', [TestCon::class, 'testMoyasar']);
 
 
 });
+
 
 
 
