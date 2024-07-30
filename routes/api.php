@@ -12,8 +12,11 @@ use App\Http\Controllers\Admin\PropertyTypeDetailController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Admin\PropertyController;
+
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\FavoriteController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
 use App\Http\Controllers\PropertyController as UserPropertyController;
 use App\Http\Controllers\CityController as UserCityController;
 use App\Http\Controllers\OffersController as UserOffersController;
@@ -34,27 +37,48 @@ use Illuminate\Support\Facades\Route;
 |----------------------------------------
 */
 Route::prefix('v1')->group(function () {
+    //bookings &  payment
     Route::post('/bookings', [BookingController::class, 'book']);
     Route::get('/payment/callback', [BookingController::class, 'callback']);
     Route::post('/payment/webhook', [BookingController::class, 'handleWebhook']);
-    /*
-|----------------------------------------
-| User API Routes
-|----------------------------------------
-*/
+
+    //user Profile Page
+    Route::get('users/{ownerId}/{ownerType}/properties', [ProfileController::class, 'userProperties']);
+    Route::get('users/{ownerId}/{ownerType}/reviews', [ProfileController::class, 'userReviews']);
+
+    // Properties and cities and Types
     Route::get('/properties', [UserPropertyController::class, 'index']);
     Route::get('/properties/{id}', [UserPropertyController::class, 'show']);
     Route::get('/cities', [UserCityController::class, 'index']);
     Route::get('/types', [UserPropertyTypeController::class, 'index']);
 
+    // Home Page Content
     Route::get('cities-details', [UserCityDetailController::class, 'index']);
     Route::get('types-details', [UserPropertyTypeDetailController::class, 'index']);
     Route::get('/ads', [UserAdController::class, 'index']);
     Route::get('/offers', [UserOffersController::class, 'propertiesWithActiveOffers']);
+
+    // Auth
     Route::post('login', [AuthController::class, 'sendVerificationCode']);
     Route::post('verify', [AuthController::class, 'verify']);
 
     Route::middleware('auth:sanctum')->group(function () {
+        // User notifications
+        Route::get('notifications', [NotificationController::class, 'index']);
+        Route::post('notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+        Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+        Route::get('notifications/read', [NotificationController::class, 'readNotifications']);
+        Route::get('notifications/unread', [NotificationController::class, 'unreadNotifications']);
+        Route::delete('notifications/delete/{id}', [NotificationController::class, 'deleteNotification']);
+        Route::delete('notifications/delete-all', [NotificationController::class, 'deleteAllNotifications']);
+
+        Route::post('property/add', [UserPropertyController::class, 'store']);
+        Route::get('my/properties/user', [UserPropertyController::class, 'userProperties']);
+        Route::get('my/properties/user/approved', [UserPropertyController::class, 'approvedProperties']);
+        Route::get('my/properties/user/rejected', [UserPropertyController::class, 'rejectedProperties']);
+        Route::delete('my/properties/user/rejected/{id}', [UserPropertyController::class, 'deleteRejectedProperty']);
+
+
         Route::post('/bookings', [BookingController::class, 'book']);
         Route::post('/profile/update', [ProfileController::class, 'update']);
         Route::prefix('favorites')->group(function () {
@@ -87,12 +111,18 @@ Route::prefix('v1')->group(function () {
         Route::post('register', [AdminAuthController::class, 'register']);
 
         Route::middleware(['auth:sanctum', 'ensureAdmin'])->group(function () {
+
+
             Route::apiResource('property-types', PropertyTypeController::class);
+
             Route::apiResource('cities', CityController::class);
+
+
             Route::apiResource('properties', PropertyController::class);
             Route::post('/properties/{id}/update-request-status', [PropertyController::class, 'updateRequestStatus']);
             Route::post('/properties/{id}/update-availability-status', [PropertyController::class, 'updateAvailabilityStatus']);
             Route::post('properties/update/{property}', [PropertyController::class, 'update']);
+
             // Pools endpoints
             Route::get('properties/{property}/pools', [PropertyController::class, 'showPools']);
             Route::post('properties/{propertyId}/pools', [PropertyController::class, 'storePool']);
@@ -140,15 +170,32 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('ads', AdController::class);
             Route::post('ads/update/{add}', [AdController::class, 'updateAd']);
 
-            //Ads Management  
-            Route::apiResource('ads', AdController::class);
-            Route::post('ads/update/{add}', [AdController::class, 'updateAd']);
+            // //Ads Management  
+            // Route::apiResource('ads', AdController::class);
+            // Route::post('ads/update/{add}', [AdController::class, 'updateAd']);
 
+            // Cities in Home page
             Route::apiResource('city-details', CityDetailController::class);
             Route::post('city-details/update/{id}', [CityDetailController::class, 'update']);
 
+            // Types in Home page
             Route::apiResource('type-details', PropertyTypeDetailController::class);
             Route::post('type-details/update/{id}', [PropertyTypeDetailController::class, 'update']);
+
+            // Admin notifications
+            Route::get('notifications', [AdminNotificationController::class, 'index']);
+            Route::post('notifications/{id}/read', [AdminNotificationController::class, 'markAsRead']);
+            Route::post('notifications/read-all', [AdminNotificationController::class, 'markAllAsRead']);
+            Route::get('notifications/read', [AdminNotificationController::class, 'readNotifications']);
+            Route::get('notifications/unread', [AdminNotificationController::class, 'unreadNotifications']);
+            Route::delete('notifications/delete/{id}', [AdminNotificationController::class, 'deleteNotification']);
+            Route::delete('notifications/delete-all', [AdminNotificationController::class, 'deleteAllNotifications']);
+
+            // Management Properties Request
+            Route::get('requests/properties', [PropertyController::class, 'showPendingProperties']);
+            Route::post('requests/properties/{id}/approve', [PropertyController::class, 'approveProperty']);
+            Route::post('requests/properties/{id}/reject', [PropertyController::class, 'rejectProperty']);
+
             Route::get('/profile', function (Request $request) {
                 return $request->user();
             });
@@ -158,7 +205,7 @@ Route::prefix('v1')->group(function () {
 
 
 
-    Route::get('/test-moyasar', [TestCon::class, 'testMoyasar']);
+
 
 
 });

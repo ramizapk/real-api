@@ -72,5 +72,7 @@ php artisan migrate
 php artisan db:seed
 
 php artisan db:seed --class=PropertySeeder
+php artisan db:seed --class=AdminSeeder
+CitySeeder
 
 php artisan storage:link

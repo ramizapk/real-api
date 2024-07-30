@@ -31,11 +31,13 @@ class PropertyResource extends JsonResource
             'property_name' => $this->property_name,
             'description' => $this->description,
             'price' => $this->price,
+
             $this->mergeWhen($activeOffer, [
                 'discount' => $discount,
                 'discounted_price' => $discountedPrice,
                 'offer_end_date' => $endDate,
             ]),
+
             'type' => new PropertyTypeResource($this->type), // Assuming you have a TypeResource for Type model
             'city' => new CityResource($this->city), // Assuming you have a CityResource for City model
             'address' => $this->address,
@@ -51,12 +53,20 @@ class PropertyResource extends JsonResource
             'request_status' => $this->request_status,
             'average_rating' => $this->average_rating,
             'ratings_count' => $this->ratings_count,
-            'is_favorited' => $user ? $this->isFavoritedBy($user->id) : false,
+            // 'is_favorited' => $user ? $this->isFavoritedBy($user->id) : false,
+            'owner_type' => $this->owner_type === 'App\Models\admins' ? 'admin' : 'user',
+            'owner' => [
+                'id' => $this->owner->id,
+                'name' => $this->owner->name,
+                'avatar' => $this->owner->avatar,
+                'phone' => $this->owner->phone,
+            ],
+            'created_date' => $this->created_at,
+            'updated_date' => $this->updated_at,
 
-
-            'reviews' => $this->whenLoaded('reviews', function () {
-                return ReviewResource::collection($this->reviews);
-            }),
+            $this->mergeWhen($user && $this->isFavoritedBy($user->id), [
+                'is_favorited' => true,
+            ]),
 
             'pools' => $this->whenLoaded('pools', function () {
                 return PoolResource::collection($this->pools); // Transform pools using PoolResource
@@ -74,10 +84,13 @@ class PropertyResource extends JsonResource
                 return new DetailResource($this->details); // Transform details using DetailResource
             }),
 
-            'owner_type' => $this->owner_type === 'App\Models\admins' ? 'admin' : 'user',
-            'owner' => $ownerResource,
-            'created_date' => $this->created_at,
-            'updated_date' => $this->updated_at,
+
+
+
+
+            'reviews' => $this->whenLoaded('reviews', function () {
+                return ReviewResource::collection($this->reviews);
+            }),
         ];
     }
 }

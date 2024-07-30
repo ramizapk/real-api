@@ -16,6 +16,7 @@ use App\Models\Pool;
 use App\Models\PropertyImage;
 use App\Models\Session;
 use App\Models\PropertyDetail;
+use App\Notifications\PropertyStatusChanged;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -44,41 +45,49 @@ class PropertyController extends Controller
 
     public function store(StorePropertyRequest $request)
     {
-        $validatedData = $request->validated();
-        $validatedData['owner_id'] = Auth::id();
-        $validatedData['owner_type'] = admins::class;
-        $validatedData['amenities'] = json_encode($validatedData['amenities']);
-        $validatedData['kitchen_amenities'] = json_encode($validatedData['kitchen_amenities']);
-        $property = Property::create($validatedData);
+        try {
+            $validatedData = $request->validated();
+            $validatedData['owner_id'] = Auth::id();
+            $validatedData['owner_type'] = admins::class;
+            $validatedData['request_status'] = "approved";
+            $validatedData['amenities'] = json_encode($validatedData['amenities']);
+            $validatedData['kitchen_amenities'] = json_encode($validatedData['kitchen_amenities']);
+            $property = Property::create($validatedData);
 
-        if ($request->has('pools')) {
-            foreach ($request->input('pools') as $pool) {
-                $property->pools()->create($pool);
+            if ($request->has('pools')) {
+                foreach ($request->input('pools') as $pool) {
+                    $property->pools()->create($pool);
+                }
             }
-        }
 
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $image) {
-                $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
-                $path = $image->storeAs('property_images', $filename, 'public');
-                PropertyImage::create([
-                    'property_id' => $property->id,
-                    'image_url' => $path,
-                ]);
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $image) {
+                    $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
+                    $path = $image->storeAs('property_images', $filename, 'public');
+                    PropertyImage::create([
+                        'property_id' => $property->id,
+                        'image_url' => $path,
+                    ]);
+                }
             }
-        }
 
-        if ($request->has('sessions')) {
-            foreach ($request->input('sessions') as $session) {
-                $property->sessions()->create($session);
+            if ($request->has('sessions')) {
+                foreach ($request->input('sessions') as $session) {
+                    $property->sessions()->create($session);
+                }
             }
+
+            if ($request->has('details')) {
+                $property->details()->create($request->input('details'));
+            }
+
+            return $this->successResponse(new PropertyResource($property->load(['pools', 'images', 'sessions', 'details'])), 'Property created successfully', 201);
+
+        } catch (\Exception $e) {
+            return $this->errorResponse('Failed to create property: ' . $e->getMessage(), 500);
         }
 
-        if ($request->has('details')) {
-            $property->details()->create($request->input('details'));
-        }
 
-        return $this->successResponse(new PropertyResource($property->load(['pools', 'images', 'sessions', 'details'])), 'Property created successfully', 201);
     }
 
     public function update(UpdatePropertyRequest $request, $id)
@@ -460,5 +469,60 @@ class PropertyController extends Controller
         $detail->delete();
 
         return $this->successResponse(null, 'Detail deleted successfully');
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    public function showPendingProperties()
+    {
+
+        $pendingProperties = Property::where('request_status', 'pending')->get();
+
+
+        if ($pendingProperties->isEmpty()) {
+            return $this->errorResponse('No pending properties found', 404);
+        }
+
+
+        return $this->successResponse(PropertyResource::collection($pendingProperties));
+    }
+
+
+
+    public function approveProperty($id)
+    {
+        $property = Property::findOrFail($id);
+        $property->request_status = 'approved';
+        $property->save();
+
+        // إرسال إشعار للمالك
+        $property->owner->notify(new PropertyStatusChanged($property));
+
+        return $this->successResponse(null, 'Property approved successfully');
+    }
+
+    public function rejectProperty($id)
+    {
+        $property = Property::findOrFail($id);
+        $property->request_status = 'rejected';
+        $property->save();
+
+        // إرسال إشعار للمالك
+        $property->owner->notify(new PropertyStatusChanged($property));
+
+        return $this->successResponse(new PropertyResource($property), 'Property rejected successfully');
     }
 }

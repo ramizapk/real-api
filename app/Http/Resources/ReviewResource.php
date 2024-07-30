@@ -17,9 +17,14 @@ class ReviewResource extends JsonResource
         return [
             'id' => $this->id,
             'property_id' => $this->property_id,
-            'user' => new UserResource($this->user),
             'review' => $this->review,
             'created_at' => $this->created_at,
+            'user' => [
+                'id' => $this->user->id,
+                'name' => $this->user->name,
+                'avatar' => $this->user->avatar,
+                'phone' => $this->user->phone,
+            ],
         ];
     }
 }

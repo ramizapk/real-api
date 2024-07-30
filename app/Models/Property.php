@@ -28,6 +28,7 @@ class Property extends Model
         'availability_status',
         'owner_id',
         'owner_type',
+        'request_status'
     ];
 
     protected $casts = [
