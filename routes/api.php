@@ -112,12 +112,12 @@ Route::prefix('v1')->group(function () {
 
         Route::middleware(['auth:sanctum', 'ensureAdmin'])->group(function () {
 
-
+            // types endpoints
             Route::apiResource('property-types', PropertyTypeController::class);
-
+            // cities endpoints
             Route::apiResource('cities', CityController::class);
 
-
+            // Properties endpoints
             Route::apiResource('properties', PropertyController::class);
             Route::post('/properties/{id}/update-request-status', [PropertyController::class, 'updateRequestStatus']);
             Route::post('/properties/{id}/update-availability-status', [PropertyController::class, 'updateAvailabilityStatus']);
